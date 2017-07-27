@@ -1,7 +1,22 @@
 #! /pkg/qct/software/python/2.7.12/bin/python
+
 import urwid
-import rtl_reader
-from mytreelistbox import myTreeListBox
+
+#Self defined TreeListBox class enabling mouse scrolls
+class myTreeListBox(urwid.TreeListBox):
+
+    def mouse_event(self, size, event, button, col, row, focus):
+        if (button == 4):
+            self.keypress(size, 'up')
+        if (button == 5):
+            self.keypress(size, 'down')
+        if(self.__super.mouse_event(size, event, button, col, row, focus) == False):
+            if (button == 1):
+                self.keypress(size, '+')
+
+    def keypress(self, size, key):
+        key = self.__super.keypress(size, key)
+        return self.unhandled_input(size, key)
 
 class FlagFileWidget(urwid.TreeWidget):
     # apply an attribute to the expand/unexpand icons
@@ -63,7 +78,7 @@ class ModuleNodeWidget(FlagFileWidget):
         else:
             return "  " + self.get_node().get_key()
 
-class HierachyLeafNode(urwid.TreeNode):
+class HierarchyLeafNode(urwid.TreeNode):
     """Metadata storage for directories"""
 
     def __init__(self, module, key='', parent=None, depth=0):
@@ -75,7 +90,7 @@ class HierachyLeafNode(urwid.TreeNode):
     def load_widget(self):
         return ModuleNodeWidget(self, leafnode=True)
 
-class HierachyNode(urwid.ParentNode):
+class HierarchyNode(urwid.ParentNode):
     """Metadata storage for directories"""
 
     def __init__(self, module, key='', parent=None, depth=0):
@@ -90,70 +105,15 @@ class HierachyNode(urwid.ParentNode):
     def load_child_node(self, key):
         child_node = self.module.sub_modules[key]
         if (len(child_node.sub_modules) == 0):
-            return HierachyLeafNode(child_node, key, self, self.depth+1)
+            return HierarchyLeafNode(child_node, key, self, self.depth+1)
         else:
-            return HierachyNode(child_node, key, self, self.depth+1)
+            return HierarchyNode(child_node, key, self, self.depth+1)
 
     def load_widget(self):
         return ModuleNodeWidget(self)
 
-class HierachyBrowser:
-    palette = [
-        ('body'         , 'black'     , 'light gray'),
-        ('flagged'      , 'black'     , 'dark green', ('bold','underline')),
-        ('focus'        , 'light gray', 'dark blue' , ('standout')),
-        ('flagged focus', 'yellow'    , 'dark cyan' , ('bold','standout','underline')),
-        ('head'         , 'yellow'    , 'black'     , ('standout')),
-        ('foot'         , 'light gray', 'black'), 
-        ('key'          , 'light cyan', 'black'     , ('underline')),
-        ('title'        , 'white'     , 'black'     , ('bold')),
-        ('dirmark'      , 'black'     , 'dark cyan' , ('bold')),
-        ('flag'         , 'dark gray' , 'light gray'),
-        ('error'        , 'dark red'  , 'light gray'),
-        ]
-
-    footer_text = [
-        ('title', "RTL Browser"), "    ",
-        ('key', "UP"), ",", ('key', "DOWN"), ",",
-        ('key', "PAGE UP"), ",", ('key', "PAGE DOWN"),
-        "  ",
-        ('key', "SPACE"), "  ",
-        ('key', "+"), ",",
-        ('key', "-"), "  ",
-        ('key', "LEFT"), "  ",
-        ('key', "HOME"), "  ",
-        ('key', "END"), "  ",
-        ('key', "Q"),
-        ]
-
-
-    def __init__(self):
-        self.top = rtl_reader.main()
-        self.top_name = rtl_reader.get_top_name()
-        self.header = urwid.AttrWrap(urwid.Text(""), 'head')
-        self.footer = urwid.AttrWrap(urwid.Text(self.footer_text), 'foot')
-        self.listbox = myTreeListBox(urwid.TreeWalker(HierachyNode(self.top, self.top_name)))
+class HierarchyBrowser:
+    def __init__(self, top, top_name):
+        self.listbox = myTreeListBox(urwid.TreeWalker(HierarchyNode(top, top_name)))
         self.listbox.offset_rows = 1
-        self.view = urwid.Frame(
-            urwid.AttrWrap(self.listbox, 'body'),
-            header=self.header,
-            footer=self.footer)
 
-    def main(self):
-        """Run the program."""
-        self.loop = urwid.MainLoop(
-            self.view, self.palette, unhandled_input=self.unhandled_input)
-        self.loop.run()
-
-    def unhandled_input(self, k):
-        # update display of focus directory
-        if k in ('q','Q'):
-            raise urwid.ExitMainLoop()
-
-
-def main():
-    HierachyBrowser().main()
-
-
-if __name__=="__main__":
-    main()
