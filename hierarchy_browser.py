@@ -3,16 +3,22 @@
 import urwid
 
 #Self defined TreeListBox class enabling mouse scrolls
-class myTreeListBox(urwid.TreeListBox):
+class MyTreeListBox(urwid.TreeListBox):
 
     def mouse_event(self, size, event, button, col, row, focus):
+        res = self.__super.mouse_event(size, event, button, col, row, focus)
         if (button == 4):
             self.keypress(size, 'up')
         if (button == 5):
             self.keypress(size, 'down')
-        if(self.__super.mouse_event(size, event, button, col, row, focus) == False):
-            if (button == 1):
-                self.keypress(size, '+')
+        #if res:
+        if (button == 1):
+            (node, position) = self.get_focus()
+            parent = node.get_node()
+            self.text_viewer.update_text_list(parent.module.raw_text)
+
+    def set_text_viewer(self, text_viewer):
+        self.text_viewer = text_viewer
 
     def keypress(self, size, key):
         key = self.__super.keypress(size, key)
@@ -27,8 +33,8 @@ class FlagFileWidget(urwid.TreeWidget):
 
     def __init__(self, node):
         self.__super.__init__(node)
-        # insert an extra AttrWrap for our own use
-        self._w = urwid.AttrWrap(self._w, None)
+        # insert an extra AttrMap for our own use
+        self._w = urwid.AttrMap(self._w, None)
         self.flagged = False
         self.update_w()
 
@@ -114,6 +120,9 @@ class HierarchyNode(urwid.ParentNode):
 
 class HierarchyBrowser:
     def __init__(self, top, top_name):
-        self.listbox = myTreeListBox(urwid.TreeWalker(HierarchyNode(top, top_name)))
+        self.listbox = MyTreeListBox(urwid.TreeWalker(HierarchyNode(top, top_name)))
         self.listbox.offset_rows = 1
+
+    def set_text_viewer(self, text_viewer):
+        self.listbox.set_text_viewer(text_viewer);
 

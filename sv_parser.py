@@ -27,7 +27,8 @@ class SystemVerilogParser(object):
             if m_endmodule:
                 push_line = 0
                 module_raw.append(line)
-                module = self._gen_module(' '.join(module_raw))
+                #module = self._gen_module(' '.join(module_raw))
+                module = self._gen_module(module_raw)
                 if (module.name == self.top_name):
                     self.root_module = module
                 self.modules[module.name] = module
@@ -62,7 +63,8 @@ class SystemVerilogParser(object):
         return (result, flag)
     
     def _gen_module(self, raw):
-        lines = raw.split(';')
+        #lines = raw.split(';')
+        lines = raw
         # Get module name from first statement
         m = re.search('module (\w+)', lines[0])
         module = SystemVerilogModule(m.group(1))
@@ -80,10 +82,11 @@ class SystemVerilogParser(object):
     def _gen_hierachy(self, root):
         if root.sub_modules:
             return
-        lines = root.raw_text.split(';')
+        #lines = root.raw_text.split(';')
+        lines = root.raw_text
         for line in lines:
             (line, flag) = self._preprocess(line, 0)
-            m = re.match('(\w+)\s(\w+)\(.*\)$',line)
+            m = re.match('^(\w+)\s(\w+)\($',line)
             if m:
                 module_name = m.group(1)
                 inst_name = m.group(2)
@@ -104,7 +107,7 @@ class SystemVerilogModule(object):
     """
     def __init__(self, name):
         self.name = name
-        self.raw_text = ''
+        self.raw_text = []
         self.signals = []
         self.sub_modules = {}
     def add_signal(self, signal):
